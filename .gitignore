@@ -173,3 +173,5 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+/Token_test/match_resultsmatch_results/
+/Token_test/testresult/
