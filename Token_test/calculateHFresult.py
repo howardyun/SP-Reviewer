@@ -1,4 +1,6 @@
 import os
+import shutil
+
 
 def processSingleFile(file_path):
     private_true_counts = {"Models": 0, "Datasets": 0, "Spaces": 0}
@@ -40,10 +42,10 @@ folders = [f for f in os.listdir(base_folder) if os.path.isdir(os.path.join(base
 
 for fold in folders:
     print(f"\n处理文件夹：{fold}")
+    os.makedirs(f"{base_folder}/{fold}/leak", exist_ok=True)
 
     category = ["error", "invalid", "success"]
     file_counts = {}
-
     for cat in category:
         folder_path = os.path.join(base_folder, fold, cat)
         if os.path.exists(folder_path):
@@ -66,6 +68,13 @@ for fold in folders:
                         total_leak_model += models_count
                         total_leak_datasets += datasets_count
                         total_leak_spaces += spaces_count
+                        source_path = file_path  # 文件在A目录中的路径
+
+                        destination_dir = f"{base_folder}/{fold}/leak"  # B目录的路径
+                        # 复制文件
+                        if os.path.exists(source_path):
+                            shutil.copy2(source_path, destination_dir)  # 或用 shutil.copy()
+
 
         else:
             file_counts[cat] = 0
