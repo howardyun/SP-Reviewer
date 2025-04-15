@@ -19,12 +19,12 @@ os.environ['https_proxy'] = 'http://127.0.0.1:7890'
 
 urllib3.disable_warnings()
 
-access_key_id = "LTAI5tLnzCKqzC9TAsjRGQuh"
-access_key_secret = "kUpakWCNXpVqWOsRLRejmWrUoPxz5q"
+access_key_id = ""
+access_key_secret = ""
 endpoint = "oss-accelerate.aliyuncs.com"
 
 oss_auth = oss2.Auth(access_key_id, access_key_secret)
-src_bucket = oss2.Bucket(oss_auth, endpoint, "ysxtestbucket")
+src_bucket = oss2.Bucket(oss_auth, endpoint, "")
 
 
 # File extensions for text files
