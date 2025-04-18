@@ -137,40 +137,40 @@ def extract_gz_from_zip(zip_path):
     return zip_ref, fs_groups, json_files
 
 
+if __name__ == "__main__":
+    # 一些代码使用示例
+    # ###############
 
-# 一些代码使用示例
-# ###############
+    #获取zip_ref对象
+    zip_ref, fs_groups, json_files = extract_gz_from_zip("testdata/kemalpm-openai-whisper-large-v3.zip")
 
-#获取zip_ref对象
-zip_ref, fs_groups, json_files = extract_gz_from_zip("testdata/kemalpm-openai-whisper-large-v3.zip")
+    # 可以从fs_groups中遍历看有什么tree.txt以及text.tar.gz
+    for key in fs_groups:
+        # 取对应的file
+        files = fs_groups[key]
+        for file in files:
+            # 这个一般是用于查看tree.txt的内容
+            if file.endswith('.txt'):
+                content = zip_ref.read(file)
+                # print(f"\n🎯 {specific_file} 的内容：")
+                # print(content.decode('utf-8'))
 
-# 可以从fs_groups中遍历看有什么tree.txt以及text.tar.gz
-for key in fs_groups:
-    # 取对应的file
-    files = fs_groups[key]
-    for file in files:
-        # 这个一般是用于查看tree.txt的内容
-        if file.endswith('.txt'):
-            content = zip_ref.read(file)
-            # print(f"\n🎯 {specific_file} 的内容：")
-            # print(content.decode('utf-8'))
+    # 在上面的代码中,如果你根据tree找到了对应的文件的话,可以用下面的代码去解压包,以下为示例:
+    target_unzip_file_name = 'kemalpm-openai-whisper-large-v3/4b72ad191495c4439dee3c85898d50b1ae12291e1f313189b02dc3ae4aa29878/text.tar.gz'
 
-# 在上面的代码中,如果你根据tree找到了对应的文件的话,可以用下面的代码去解压包,以下为示例:
-target_unzip_file_name = 'kemalpm-openai-whisper-large-v3/4b72ad191495c4439dee3c85898d50b1ae12291e1f313189b02dc3ae4aa29878/text.tar.gz'
+    extract_gz_file_to_tmp(zip_ref, target_unzip_file_name, TMP_DIR)
 
-extract_gz_file_to_tmp(zip_ref, target_unzip_file_name, TMP_DIR)
-
-print(1)
-
-
+    print(1)
 
 
-# zip_ref, fs_groups, json_files = my_uzip('testdata/sundas-tamimi-updated-image-text-audio.zip')
-#
-#
-# process_tree_txt(zip_ref, fs_groups)
-#
-# zip_ref.close()
+
+
+    # zip_ref, fs_groups, json_files = my_uzip('testdata/sundas-tamimi-updated-image-text-audio.zip')
+    #
+    #
+    # process_tree_txt(zip_ref, fs_groups)
+    #
+    # zip_ref.close()
 
 
 

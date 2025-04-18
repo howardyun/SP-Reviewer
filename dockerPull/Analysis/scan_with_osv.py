@@ -3,6 +3,7 @@ import json
 import os
 import subprocess
 from pathlib import Path
+from ParseDir import extract_gz_from_zip, extract_gz_file_to_tmp
 
 
 def parse_and_write_to_csv(folder_path, scan_data, csv_writer):
@@ -27,6 +28,23 @@ def parse_and_write_to_csv(folder_path, scan_data, csv_writer):
                 if vuln.get("database_specific", ""):
                     severity = vuln.get("database_specific", "").get("severity", "")
                     cwe_ids = ",".join(vuln.get("database_specific", "").get("cwe_ids", []))
+                # 获取最新的 CVSS 评分
+                severity_score = ""
+                severity_list = vuln.get("severity", [])
+                for sev in severity_list:
+                    if sev.get("type") == "CVSS_V4":
+                        severity_score = sev.get("score", "")
+                        break
+                if not severity_score:  # 如果没有 CVSS_V4，尝试 CVSS_V3
+                    for sev in severity_list:
+                        if sev.get("type") == "CVSS_V3":
+                            severity_score = sev.get("score", "")
+                            break
+                if not severity_score:  # 如果没有 CVSS_V4，尝试 CVSS_V3
+                    for sev in severity_list:
+                        if sev.get("type") == "CVSS_V2":
+                            severity_score = sev.get("score", "")
+                            break
                 # 获取分组信息
                 group_ids = ""
                 experimental_analysis = ""
@@ -49,6 +67,7 @@ def parse_and_write_to_csv(folder_path, scan_data, csv_writer):
                     "Ecosystem": ecosystem,
                     "Vulnerability ID": vuln_id,
                     "Severity": severity,
+                    "Severity_score": severity_score,
                     "Aliases": aliases,
                     "Group IDs": group_ids,
                     "Cwe_Ids": cwe_ids,
@@ -98,7 +117,7 @@ def scan_all_folders(root_path, csv_file):
     # 初始化CSV文件
     csv_fields = [
         "Space name", "Source Type", "Package Name",
-        "Package Version", "Ecosystem", "Vulnerability ID", "Severity", "Aliases", "Cwe_Ids",
+        "Package Version", "Ecosystem", "Vulnerability ID", "Severity", "Aliases", "Cwe_Ids", "Severity_score",
         "Group IDs", "Experimental Analysis"
     ]
     with open(csv_file, mode="w", newline="", encoding="utf-8") as f:
@@ -111,12 +130,31 @@ def scan_all_folders(root_path, csv_file):
 
 
 def main():
-    # 设置命令行参数
-    path = "./a"
-    csv_file = "result.csv"
 
-    # 执行扫描
-    scan_all_folders(path, csv_file)
+    root = Path("testdata")
+    for item in root.iterdir():
+        #解压缩文件
+        zip_ref, fs_groups, json_files = extract_gz_from_zip(item)
+
+        for key in fs_groups:
+            # 取对应的file
+            files = fs_groups[key]
+            for file in files:
+                # 这个一般是用于查看tree.txt的内容
+                if file.endswith('.txt'):
+                    content = zip_ref.read(file).decode('utf-8')
+                    if "freeze.txt " in content:
+                        target_unzip_file_name = file.replace("tree.txt", "text.tar.gz")
+                        TMP_DIR = Path("tmp/"+item.name.replace(".zip", "")+"/")
+                        TMP_DIR.mkdir(exist_ok=True)
+                        extract_gz_file_to_tmp(zip_ref, target_unzip_file_name, TMP_DIR)
+
+        # 设置命令行参数
+        path = "./tmp"
+        csv_file = "result.csv"
+
+        # 执行扫描
+        scan_all_folders(path, csv_file)
 
 
 if __name__ == "__main__":
