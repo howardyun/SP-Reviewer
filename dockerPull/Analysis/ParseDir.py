@@ -1,12 +1,8 @@
 import io
-import zipfile
 from pathlib import Path
 from collections import defaultdict
 import zipfile
-import shutil
-import os
-
-from dockerPull.Analysis.analysisUtils import recursive_extract
+from dockerPull.Analysis.analysisUtils import recursive_extract, delete_folder_recursive
 
 TMP_DIR = Path("tmp")
 TMP_DIR.mkdir(exist_ok=True)
@@ -160,17 +156,31 @@ if __name__ == "__main__":
 
     extract_gz_file_to_tmp(zip_ref, target_unzip_file_name, TMP_DIR)
 
-    print(1)
+
+# 删除文件
+# delete_folder_recursive(TMP_DIR)
+
+
+# 关闭zip_ref对象
+zip_ref.close()
+print(1)
+
+
+# zip_ref, fs_groups, json_files = my_uzip('testdata/sundas-tamimi-updated-image-text-audio.zip')
+#
+#
+# process_tree_txt(zip_ref, fs_groups)
+#
+# zip_ref.close()
 
 
 
-
-    # zip_ref, fs_groups, json_files = my_uzip('testdata/sundas-tamimi-updated-image-text-audio.zip')
-    #
-    #
-    # process_tree_txt(zip_ref, fs_groups)
-    #
-    # zip_ref.close()
+# zip_ref, fs_groups, json_files = my_uzip('testdata/sundas-tamimi-updated-image-text-audio.zip')
+#
+#
+# process_tree_txt(zip_ref, fs_groups)
+#
+# zip_ref.close()
 
 
 
