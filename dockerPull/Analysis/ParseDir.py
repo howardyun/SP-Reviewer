@@ -3,6 +3,8 @@ from pathlib import Path
 from collections import defaultdict
 import zipfile
 from dockerPull.Analysis.analysisUtils import recursive_extract, delete_folder_recursive
+import re
+
 
 TMP_DIR = Path("tmp")
 TMP_DIR.mkdir(exist_ok=True)
@@ -133,12 +135,40 @@ def extract_gz_from_zip(zip_path):
     return zip_ref, fs_groups, json_files
 
 
+def check_pypi_info(content_bytes):
+    """检查一个 txt 文件内容中是否包含 PyPI 包信息"""
+    try:
+        text = content_bytes.decode('utf-8')
+    except UnicodeDecodeError:
+        # 如果解码失败，可以忽略这个文件
+        return False
+
+    # 用正则找 site-packages/xxx-xxx.dist-info 这样的东西
+    matches = re.findall(r'site-packages/[^/]+-\d+(?:\.\d+)*?\.dist-info', text)
+
+    return len(matches) > 0  # 至少有一个匹配，就返回 True
+
+def extract_Pypi(text):
+    text = content.decode('utf-8')  # 这里通常是 utf-8，如果是别的编码（如gbk）需要调整
+
+    # 第二步：用正则提取 包名-版本号
+    package_versions = re.findall(r'site-packages/([A-Za-z0-9_\-\.]+-\d+(?:\.\d+)*?)\.dist-info', text)
+
+    # 第三步：去重 + 排序
+    package_versions = sorted(set(package_versions))
+
+    # 第四步：输出或保存
+    for pv in package_versions:
+        print(pv)
+    return package_versions
+
 if __name__ == "__main__":
     # 一些代码使用示例
     # ###############
 
+    all_packages = set()
     #获取zip_ref对象
-    zip_ref, fs_groups, json_files = extract_gz_from_zip("testdata/kemalpm-openai-whisper-large-v3.zip")
+    zip_ref, fs_groups, json_files = extract_gz_from_zip("testdata/sundas-tamimi-updated-image-text-audio.zip")
 
     # 可以从fs_groups中遍历看有什么tree.txt以及text.tar.gz
     for key in fs_groups:
@@ -148,22 +178,34 @@ if __name__ == "__main__":
             # 这个一般是用于查看tree.txt的内容
             if file.endswith('.txt'):
                 content = zip_ref.read(file)
+                if check_pypi_info(content):
+                    package_versions = extract_Pypi(content)
+                    if package_versions:
+                        all_packages.update(package_versions)
                 # print(f"\n🎯 {specific_file} 的内容：")
                 # print(content.decode('utf-8'))
+    print(all_packages)
+    # 处理成字典
+    # 清洗 + 拆分成字典
+    package_dict = {pkg.replace('.wh.', '').rsplit('-', 1)[0]: pkg.replace('.wh.', '').rsplit('-', 1)[1] for pkg in all_packages}
+    print(package_dict)
+
 
     # 在上面的代码中,如果你根据tree找到了对应的文件的话,可以用下面的代码去解压包,以下为示例:
-    target_unzip_file_name = 'kemalpm-openai-whisper-large-v3/4b72ad191495c4439dee3c85898d50b1ae12291e1f313189b02dc3ae4aa29878/text.tar.gz'
+    # target_unzip_file_name = 'kemalpm-openai-whisper-large-v3/4b72ad191495c4439dee3c85898d50b1ae12291e1f313189b02dc3ae4aa29878/text.tar.gz'
+    #
+    # extract_gz_file_to_tmp(zip_ref, target_unzip_file_name, TMP_DIR)
+    # 删除文件
+    # delete_folder_recursive(TMP_DIR)
 
-    extract_gz_file_to_tmp(zip_ref, target_unzip_file_name, TMP_DIR)
+    # 关闭zip_ref对象
+    zip_ref.close()
+    print(1)
 
 
-# 删除文件
-# delete_folder_recursive(TMP_DIR)
 
 
-# 关闭zip_ref对象
-zip_ref.close()
-print(1)
+
 
 
 # zip_ref, fs_groups, json_files = my_uzip('testdata/sundas-tamimi-updated-image-text-audio.zip')
