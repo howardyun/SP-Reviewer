@@ -4,6 +4,7 @@ import gzip
 import shutil
 import io
 import os
+import re
 from pathlib import Path
 
 
@@ -108,6 +109,36 @@ def delete_folder_recursive(folder_path):
             print(f"[!] 路径存在但不是文件夹：{folder_path}")
     else:
         print(f"[!] 文件夹不存在：{folder_path}")
+
+
+def check_pypi_info(content_bytes):
+    """检查一个 txt 文件内容中是否包含 PyPI 包信息"""
+    try:
+        text = content_bytes.decode('utf-8')
+    except UnicodeDecodeError:
+        # 如果解码失败，可以忽略这个文件
+        return False
+
+    # 用正则找 site-packages/xxx-xxx.dist-info 这样的东西
+    matches = re.findall(r'site-packages/[^/]+-\d+(?:\.\d+)*?\.dist-info', text)
+
+    return len(matches) > 0  # 至少有一个匹配，就返回 True
+
+def extract_Pypi(content):
+    text = content.decode('utf-8')  # 这里通常是 utf-8，如果是别的编码（如gbk）需要调整
+
+    # 第二步：用正则提取 包名-版本号
+    package_versions = re.findall(r'site-packages/([A-Za-z0-9_\-\.]+-\d+(?:\.\d+)*?)\.dist-info', text)
+
+    # 第三步：去重 + 排序
+    package_versions = sorted(set(package_versions))
+
+    # 第四步：输出或保存
+    for pv in package_versions:
+        print(pv)
+    return package_versions
+
+
 
 
 #
