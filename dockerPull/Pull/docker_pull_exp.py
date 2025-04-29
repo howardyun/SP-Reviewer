@@ -22,9 +22,9 @@ urllib3.disable_warnings()
 access_key_id = ""
 access_key_secret = ""
 endpoint = "oss-accelerate.aliyuncs.com"
-
-oss_auth = oss2.Auth(access_key_id, access_key_secret)
-src_bucket = oss2.Bucket(oss_auth, endpoint, "")
+#
+# oss_auth = oss2.Auth(access_key_id, access_key_secret)
+# src_bucket = oss2.Bucket(oss_auth, endpoint, "")
 
 
 # File extensions for text files
@@ -34,7 +34,7 @@ TEXT_EXTENSIONS = [
     '.bash', '.conf', '.cfg', '.ini', '.log', '.sql', '.toml',
     '.jsx', '.tsx', '.vue', '.rb', '.pl', '.php', '.go', '.rs', '.scala', '.dart',
     '.proto', '.diff', '.patch', '.rst', '.tex', '.bib', '.markdown', '.gitignore',
-    '.properties', '.gradle', '.bat', '.ps1', '.vbs', '.cs', '.csproj', '.sln'
+    '.properties', '.gradle', '.bat', '.ps1', '.vbs', '.cs', '.csproj', '.sln','DOCKERFILE','dockerfile'
 ]
 def create_session():
     session = requests.Session()
@@ -463,8 +463,9 @@ for layer in layers:
     fake_layerid = hashlib.sha256(ublob.encode('utf-8')).hexdigest()
     oss_dir_key = "exp/sls/layers/" + fake_layerid + "/tree.txt"
     print(oss_dir_key)
-    exist_in_oss = src_bucket.object_exists(oss_dir_key)
-    print(f"checking {exist_in_oss}  {oss_dir_key}")
+    # exist_in_oss = src_bucket.object_exists(oss_dir_key)
+    # print(f"checking {exist_in_oss}  {oss_dir_key}")
+    exist_in_oss = False
     if not exist_in_oss:
         # FIXME: Creating fake layer ID. Don't know how Docker generates it
         layerdir = imgdir + '/' + fake_layerid
@@ -528,14 +529,14 @@ for layer in layers:
         # step 3. 上传
         print("Uploading to oss...")
         try:
-            src_bucket.put_object_from_file("exp/sls/layers/" + fake_layerid + "/check_model.sh",
-                                            analysis_layer_result_dir + "/check_model.sh")
-            src_bucket.put_object_from_file("exp/sls/layers/" + fake_layerid + "/model_check.tar.gz",
-                                            analysis_layer_result_dir + "/model_check.tar.gz")
-            src_bucket.put_object_from_file("exp/sls/layers/" + fake_layerid + "/text.tar.gz",
-                                            analysis_layer_result_dir + "/text.tar.gz")
-            src_bucket.put_object_from_file("exp/sls/layers/" + fake_layerid + "/tree.txt",
-                                            analysis_layer_result_dir + "/tree.txt")
+            # src_bucket.put_object_from_file("exp/sls/layers/" + fake_layerid + "/check_model.sh",
+            #                                 analysis_layer_result_dir + "/check_model.sh")
+            # src_bucket.put_object_from_file("exp/sls/layers/" + fake_layerid + "/model_check.tar.gz",
+            #                                 analysis_layer_result_dir + "/model_check.tar.gz")
+            # src_bucket.put_object_from_file("exp/sls/layers/" + fake_layerid + "/text.tar.gz",
+            #                                 analysis_layer_result_dir + "/text.tar.gz")
+            # src_bucket.put_object_from_file("exp/sls/layers/" + fake_layerid + "/tree.txt",
+            #                                 analysis_layer_result_dir + "/tree.txt")
             # subprocess.run("ossutil cp -r " + analysis_layer_result_dir + " oss://hct-ae-test/exp/serverless/" + fake_layerid + "/", shell=True, check=True)
             print("Uploading to oss completed successfully")
         except subprocess.CalledProcessError as e:
@@ -572,13 +573,13 @@ file = open(manifest_file_path, 'w')
 file.write(json.dumps(content))
 file.close()
 
-print("Uploading to oss...")
-try:
-    src_bucket.put_object_from_file("exp/sls/images-r8/" + repo.replace('/', '_') + '_' + img + '__manifest.json',
-                                    manifest_file_path)
-    print("Uploading to oss completed successfully")
-except subprocess.CalledProcessError as e:
-    print(f"Uploading to oss encountered an error (exit code {e.returncode}), but continuing with the process")
+# print("Uploading to oss...")
+# try:
+#     src_bucket.put_object_from_file("exp/sls/images-r8/" + repo.replace('/', '_') + '_' + img + '__manifest.json',
+#                                     manifest_file_path)
+#     print("Uploading to oss completed successfully")
+# except subprocess.CalledProcessError as e:
+#     print(f"Uploading to oss encountered an error (exit code {e.returncode}), but continuing with the process")
 
-shutil.rmtree(imgdir)
+# shutil.rmtree(imgdir)
 print('\rDocker image pulled: ' + repo.replace('/', '_') + '_' + img)
