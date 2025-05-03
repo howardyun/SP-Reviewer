@@ -1,7 +1,7 @@
 import json
 
 # 加载 JSON 文件
-with open('package_info_data/packages_info_1.json', 'r', encoding='utf-8') as f:
+with open('../package_info_data/packages_info_1.json', 'r', encoding='utf-8') as f:
     data = json.load(f)
 
 

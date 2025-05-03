@@ -180,3 +180,4 @@ cython_debug/
 /dockerPull/Analysis/testdata/
 /dockerPull/Analysis/tmp
 /dockerPull/Analysis/layers/
+/dockerPull/Analysis/manifests/
