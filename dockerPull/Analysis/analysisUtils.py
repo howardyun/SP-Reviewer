@@ -134,8 +134,8 @@ def extract_Pypi(content):
     package_versions = sorted(set(package_versions))
 
     # 第四步：输出或保存
-    for pv in package_versions:
-        print(pv)
+    # for pv in package_versions:
+    #     print(pv)
     return package_versions
 
 
