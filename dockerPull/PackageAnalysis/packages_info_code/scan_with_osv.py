@@ -3,7 +3,7 @@ import json
 import os
 import subprocess
 from pathlib import Path
-from ParseDir import extract_gz_from_zip, extract_gz_file_to_tmp
+from dockerPull.Analysis.bk.ParseDir import extract_gz_from_zip, extract_gz_file_to_tmp
 
 
 def parse_and_write_to_csv(folder_path, scan_data, csv_writer):
@@ -131,7 +131,7 @@ def scan_all_folders(root_path, csv_file):
 
 def main():
 
-    root = Path("testdata")
+    root = Path("../../Analysis/testdata")
     for item in root.iterdir():
         #解压缩文件
         zip_ref, fs_groups, json_files = extract_gz_from_zip(item)
@@ -150,8 +150,8 @@ def main():
                         extract_gz_file_to_tmp(zip_ref, target_unzip_file_name, TMP_DIR)
 
         # 设置命令行参数
-        path = "./tmp"
-        csv_file = "result.csv"
+        path = "../../Analysis/tmp"
+        csv_file = "../../Analysis/bk/result.csv"
 
         # 执行扫描
         scan_all_folders(path, csv_file)

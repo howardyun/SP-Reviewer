@@ -6,7 +6,7 @@ from dockerPull.Analysis.analysisUtils import recursive_extract, delete_folder_r
 import re
 
 
-TMP_DIR = Path("tmp")
+TMP_DIR = Path("../tmp")
 TMP_DIR.mkdir(exist_ok=True)
 
 def extract_gz_file_to_tmp(zip_ref,file_name,output_dir):
@@ -101,7 +101,7 @@ if __name__ == "__main__":
 
     all_packages = set()
     #获取zip_ref对象
-    zip_ref, fs_groups, json_files = extract_gz_from_zip("testdata/kemalpm-openai-whisper-large-v3.zip")
+    zip_ref, fs_groups, json_files = extract_gz_from_zip("../testdata/kemalpm-openai-whisper-large-v3.zip")
 
     # 可以从fs_groups中遍历看有什么tree.txt以及text.tar.gz
     for key in fs_groups:
