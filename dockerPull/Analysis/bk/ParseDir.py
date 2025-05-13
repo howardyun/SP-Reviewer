@@ -2,7 +2,7 @@ import io
 from pathlib import Path
 from collections import defaultdict
 import zipfile
-from dockerPull.Analysis.analysisUtils import recursive_extract, delete_folder_recursive
+from dockerPull.Analysis.PackageExtract.analysisUtils import recursive_extract
 import re
 
 

@@ -6,6 +6,22 @@ import io
 import os
 import re
 from pathlib import Path
+import sqlite3
+import json
+from collections import defaultdict
+
+
+# 合并多json
+def merge_many_dicts_with_list_values(*dicts):
+    merged = defaultdict(set)  # 用 set 自动去重
+
+    for d in dicts:
+        for k, v in d.items():
+            merged[k].update(v)  # 合并并去重
+
+    # 转为普通 dict 且将 set 转回 list
+    return {k: list(v) for k, v in merged.items()}
+
 
 
 
@@ -125,19 +141,80 @@ def check_pypi_info(content_bytes):
     return len(matches) > 0  # 至少有一个匹配，就返回 True
 
 def extract_Pypi(content):
+    def clean_pypi_name(name):
+        # 去掉前缀 .wh.（仅限开头）
+        if name.startswith(".wh."):
+            name = name[4:]  # 去掉前4个字符 ".wh."
+        # 可选：去掉后缀（.whl, .tar.gz）
+        # import re
+        # name = re.sub(r'\.whl$|\.tar\.gz$', '', name)
+        return name
+
     text = content.decode('utf-8')  # 这里通常是 utf-8，如果是别的编码（如gbk）需要调整
 
     # 第二步：用正则提取 包名-版本号
     package_versions = re.findall(r'site-packages/([A-Za-z0-9_\-\.]+-\d+(?:\.\d+)*?)\.dist-info', text)
+    cleaned_package_versions = [clean_pypi_name(pkg) for pkg in package_versions]
 
     # 第三步：去重 + 排序
-    package_versions = sorted(set(package_versions))
+    package_versions = sorted(set(cleaned_package_versions))
 
     # 第四步：输出或保存
     # for pv in package_versions:
     #     print(pv)
     return package_versions
 
+
+
+def sqlite3_connect(db_name):
+    # # 连接数据库（自动创建）
+    conn = sqlite3.connect(db_name)
+    cursor = conn.cursor()
+    return conn, cursor
+
+
+
+# 用于新数据库创建
+def sqlite3_init(db_name):
+    # # 连接数据库（自动创建）
+    conn = sqlite3.connect(db_name)
+    cursor = conn.cursor()
+    # 创建一个表
+    cursor.execute('''
+           CREATE TABLE IF NOT EXISTS kv_data (
+               layer TEXT PRIMARY KEY,
+               pypi_info_list TEXT
+           )
+       ''')
+    return conn, cursor
+
+
+# 插入内容
+def sqlite3_insert(conn,cursor,data,db_name = 'kv_data',key_name='layer',value_name= 'pypi_info_list'):
+    # 插入数据
+    for k, v in data.items():
+        cursor.execute(
+            f"INSERT OR REPLACE INTO {db_name} ({key_name}, {value_name}) VALUES (?, ?)",
+            (k, json.dumps(v, ensure_ascii=False))
+        )
+    conn.commit()
+
+# 根据key 搜索value
+def sqlite3_search(cursor,db_name = 'kv_data',key_name='layer',value_name= 'pypi_info_list'):
+    key_to_query = "item001"
+    cursor.execute(f"SELECT {value_name} FROM {db_name} WHERE {key_name}=?", (key_to_query,))
+    result = cursor.fetchone()
+    if result:
+        value = json.loads(result[0])
+        print("查询结果：", value)
+    else:
+        print("未找到对应 Key")
+# 找到所有
+def sqlit3_fetch_all(cursor,db_name = 'kv_data',key_name='layer',value_name= 'pypi_info_list'):
+    cursor.execute(f"SELECT {key_name},{value_name} FROM {db_name}")
+    return cursor.fetchall()
+    # for row in cursor.fetchall():
+    #     print(row[0], json.loads(row[1]))
 
 
 

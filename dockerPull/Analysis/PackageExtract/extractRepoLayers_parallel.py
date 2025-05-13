@@ -5,7 +5,7 @@ from collections import defaultdict
 import pandas as pd
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from ..analysisUtils import extract_Pypi, check_pypi_info
+from dockerPull.Analysis.PackageExtract.analysisUtils import extract_Pypi, check_pypi_info
 
 
 def save_to_json(filename, package_dict, path=''):

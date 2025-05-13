@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from analysisUtils import extract_Pypi,check_pypi_info
+from dockerPull.Analysis.PackageExtract.analysisUtils import extract_Pypi,check_pypi_info
 
 from collections import defaultdict
 
