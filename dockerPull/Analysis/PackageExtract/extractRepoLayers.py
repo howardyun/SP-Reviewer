@@ -87,8 +87,8 @@ if __name__ == '__main__':
         # if index % 10000 == 0:
         #     break
         # JSON 文件路径
-        file_path =str(file)
-        layers = get_layers_by_manifest_json(file_path)
+            file_path =str(file)
+            layers = get_layers_by_manifest_json(file_path)
 
         if len(layers) != 0:
             target_path = "" #换成
