@@ -52,7 +52,9 @@ def iterate_layers(dir,sqlit_conn,sqlit_cursor):
                         # 找到对应层的名字，将名字存入到临时的dict当中
                         layer_name = subfolder.name
                         package_dict_tmp[layer_name] = package_versions
-
+                    else:
+                        layer_name = subfolder.name
+                        package_dict_tmp[layer_name] = []
                     if count % 1000 == 0:
                         print(count)
                         # 插入并提交
@@ -76,19 +78,22 @@ def iterate_layers(dir,sqlit_conn,sqlit_cursor):
 
 
 if __name__ == '__main__':
-    # # 初始化数据库
-    # conn,cursor = sqlite3_init('kv_layer_pypi.db')
-    # layers_dir = 'Z:/hf-images1/layers'   #更换为真实路径
-    # # 获取所有Pypi包信息，同时将每一个layer的信息存到SQlite当中
-    # package_dict = iterate_layers(layers_dir,conn,cursor)
-    # # 记录至Json
-    # save_to_json(package_dict,'first_data_pypi_info')
-    #
-    # conn.close()
+    # 初始化数据库
+    conn,cursor = sqlite3_init('kv_all_layer_pypi.db')
+    layers_dir = 'Z:/hf-images1/layers'   #更换为真实路径
+    # 获取所有Pypi包信息，同时将每一个layer的信息存到SQlite当中
+    package_dict = iterate_layers(layers_dir,conn,cursor)
+    # 记录至Json
+    save_to_json(package_dict,'first_data_pypi_info')
 
-    conn , cursor= sqlite3_connect('kv_layer_pypi.db')
     result = sqlit3_fetch_all(cursor)
     print(result)
+
+    conn.close()
+
+    # conn , cursor= sqlite3_connect('kv_layer_pypi.db')
+    # result = sqlit3_fetch_all(cursor)
+    # print(result)
 
 
 
