@@ -89,12 +89,30 @@ def iterate_manifest(dir,folder_names):
     print(f'Complete:{index_complete}')
     print(f'lack:{index_lack}')
 
+def iterate_layers_db(db_file,db_name = 'kv_data',key_name='layer',value_name= 'pypi_info_list'):
+    conn = sqlite3.connect(db_file)
+    cursor= conn.cursor()
+    # 选出所有的
+    cursor.execute(f"SELECT {key_name} FROM {db_name}")
+    result =  cursor.fetchall()
+    result = [row[0] for row in result]
+    print(result)
+
+    # 关闭链接
+    conn.close()
+
+    return cursor.fetchall()
+
+
+def db_store():
+    return
 
 if __name__ == '__main__':
     # layer folder 的路径
     base_path= 'Z:/hf-images1'
     # 获取所有的layer folder 的名称
-    folder_names = iterate_layers(f'{base_path}/layers')
+    # folder_names = iterate_layers(f'{base_path}/layers')
+    folder_names = iterate_layers_db('kv_all_layer_pypi.db')
     iterate_manifest(f'{base_path}/images-r8',folder_names)
 
 
