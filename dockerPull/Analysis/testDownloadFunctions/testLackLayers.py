@@ -6,6 +6,48 @@ import json
 
 import sqlite3
 
+
+def init_create_db(db_name):
+    # # 连接数据库（自动创建）
+    conn = sqlite3.connect(db_name)
+    cursor = conn.cursor()
+    # 创建一个表
+    cursor.execute('''
+                   CREATE TABLE IF NOT EXISTS kv_data (
+                       repo_name TEXT PRIMARY KEY,
+                       pypi_info_list TEXT,
+                       lack BOOLEAN
+                   )
+               ''')
+    return conn, cursor
+    # 用于新数据库创建
+
+def db_insert(conn,cursor,data,db_name = 'kv_data',key_name='repo_name',value_name= 'pypi_info_list',lack = 'lack'):
+    # 插入数据
+    for k, v in data.items():
+        cursor.execute(
+            f"INSERT OR REPLACE INTO {db_name} ({key_name}, {value_name},{lack}) VALUES (?, ?, ?)",
+            (k,  json.dumps(v[0][0], ensure_ascii=False),v[0][1])
+        )
+    conn.commit()
+
+def db_search(cursor,key_to_query,db_name = 'kv_data',key_name='layer',value_name= 'pypi_info_list'):
+    pypi_info = []
+    for key in key_to_query:
+        cursor.execute(f"SELECT {value_name} FROM {db_name} WHERE {key_name}=?", (key,))
+        result = cursor.fetchone()
+
+        if result:
+            value = json.loads(result[0])
+            pypi_info.append(value)
+            # print("查询结果：", value)
+        # else:
+            # print("未找到对应 Key")
+    pypi_info = sum(pypi_info,[])
+    return pypi_info
+
+
+
 def get_layers_by_manifest_json(file_path):
 
     # 读取 JSON 内容
@@ -26,13 +68,17 @@ def get_layers_by_manifest_json(file_path):
         # print("No 'Layers' field found.")
         return [],[],[]
 
-def check_lack_layer(layers,layer_folder_names):
+def check_lack_layer_and_extract_pypi_info(layers,layer_folder_names,conn_pypi,cursor_pypi):
     lack_layer = []
     for layer in layers:
         if layer not in layer_folder_names:
             lack_layer.append(layer)
 
-    return lack_layer
+    pypi_info = db_search(cursor_pypi,layers)
+
+    return lack_layer,pypi_info
+
+
 
 
 def iterate_layers(dir, cache_file='layers_cache_first_data.json'):
@@ -73,7 +119,7 @@ def iterate_manifest(dir,folder_names):
             print(count)
         file_path = str(file)
         layers,config,repotag = get_layers_by_manifest_json(file_path)
-        lack_layer = check_lack_layer(layers, folder_names)
+        lack_layer,pypi_info = check_lack_layer_and_extract_pypi_info(layers, folder_names)
         if len(lack_layer) != 0 :
             index_lack += 1
             # print(file.name)
@@ -98,22 +144,66 @@ def iterate_layers_db(db_file,db_name = 'kv_data',key_name='layer',value_name= '
     result = [row[0] for row in result]
     print(result)
 
-    # 关闭链接
-    conn.close()
+    return cursor.fetchall(),conn,cursor
 
-    return cursor.fetchall()
+def iterate_manifest_db(dir,folder_names,db_file,conn_pypi,cursor_pypi):
+    # 初始化
+    conn_repo,cursor_repo = init_create_db(db_file)
+    package_dict_tmp = defaultdict(list)
+
+    folder_path = Path(dir)  # 替换为你的文件夹路径
+    json_files = list(folder_path.glob('*.json'))  # 只匹配当前文件夹的 .json 文件
+    # 如果要包含子文件夹中的 json 文件
+    # json_files = list(folder_path.rglob('*.json'))
+    count = 0
+    index_lack = 0
+    index_complete = 0
+    for file in json_files:
+        count += 1
+        if count % 1000 == 0:
+            print(count)
+            # 插入并提交
+            db_insert(conn_repo,cursor_repo, package_dict_tmp)
+            # 将tmp清除
+            package_dict_tmp.clear()
+        file_path = str(file)
+        layers, config, repotag = get_layers_by_manifest_json(file_path)
+        lack_layer,pypi_info = check_lack_layer_and_extract_pypi_info(layers, folder_names,conn_pypi, cursor_pypi)
+        # 如果缺失
+        if len(lack_layer) != 0 :
+            ### 记录到manifest中 ###
+            index_lack += 1
+            # print(file.name)
+            data = [{
+                "Config": config,
+                "RepoTags": repotag,
+                "Layers": lack_layer
+            }]
+            with open(f'lackLayersRepo/{file.name}', 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=4, ensure_ascii=False)
+            ### 记录到db ###
+            package_dict_tmp[file.name.split('.')[0]].append([pypi_info,True])
+        else:
+            package_dict_tmp[file.name.split('.')[0]].append([pypi_info,False])
+            # 如果全，
+            index_complete += 1
+
+    db_insert(conn_repo, cursor_repo, package_dict_tmp)
+    # 将tmp清除
+    package_dict_tmp.clear()
+
+    print(f'Complete:{index_complete}')
+    print(f'lack:{index_lack}')
 
 
-def db_store():
-    return
 
 if __name__ == '__main__':
     # layer folder 的路径
     base_path= 'Z:/hf-images1'
     # 获取所有的layer folder 的名称
     # folder_names = iterate_layers(f'{base_path}/layers')
-    folder_names = iterate_layers_db('kv_all_layer_pypi.db')
-    iterate_manifest(f'{base_path}/images-r8',folder_names)
+    folder_names,conn_pypi,cursor_pypi = iterate_layers_db('kv_all_layer_pypi.db')
+    iterate_manifest_db(f'{base_path}/images-r8',folder_names,'repo_pypi.db',conn_pypi,cursor_pypi)
 
 
 
