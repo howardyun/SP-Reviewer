@@ -137,7 +137,7 @@ if __name__ == "__main__":
     import os
 
     # 读取 JSON 文件
-    with open('../package_info_data/packages_info_1.json', 'r') as file:
+    with open('../package_info_data/first_data_pypi_info.json', 'r') as file:
         data = json.load(file)
 
     # 准备 requirements.txt 内容
