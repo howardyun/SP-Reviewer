@@ -2,7 +2,7 @@ import pandas as pd
 import sqlite3
 
 # 1. 读取 CSV 文件
-csv_file = '../package_info_data/result.csv'
+csv_file = '../package_info_data/result_new.csv'
 df = pd.read_csv(csv_file)
 
 # 2. 创建 SQLite 数据库并建立连接

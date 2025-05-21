@@ -84,7 +84,7 @@ def scan_folder(folder_path, csv_writer):
         result = subprocess.run(
             [
                 "osv-scanner", "scan", "source",
-                "--format", "json", "--offline",
+                "--format", "json", "--offline",'--download-offline-databases',
                 "--lockfile", "requirements.txt:./requirements.txt"
             ],
             cwd=str(folder_path),  # 设置工作目录为当前文件夹
@@ -171,7 +171,7 @@ if __name__ == "__main__":
 
     # 设置命令行参数
     path = "../package_info_data/"
-    csv_file = "../package_info_data/result.csv"
+    csv_file = "../package_info_data/result_new.csv"
 
     # 执行扫描
     scan_all_folders(path, csv_file)
