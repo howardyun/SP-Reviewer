@@ -142,9 +142,9 @@ def iterate_layers_db(db_file,db_name = 'kv_data',key_name='layer',value_name= '
     cursor.execute(f"SELECT {key_name} FROM {db_name}")
     result =  cursor.fetchall()
     result = [row[0] for row in result]
-    print(result)
+    print(len(result))
 
-    return cursor.fetchall(),conn,cursor
+    return result,conn,cursor
 
 def iterate_manifest_db(dir,folder_names,db_file,conn_pypi,cursor_pypi):
     # 初始化
@@ -161,11 +161,13 @@ def iterate_manifest_db(dir,folder_names,db_file,conn_pypi,cursor_pypi):
     for file in json_files:
         count += 1
         if count % 1000 == 0:
-            print(count)
+            print(f"{count}: Complte:{index_complete}-----Incomplte:{index_lack}")
             # 插入并提交
             db_insert(conn_repo,cursor_repo, package_dict_tmp)
             # 将tmp清除
             package_dict_tmp.clear()
+
+
         file_path = str(file)
         layers, config, repotag = get_layers_by_manifest_json(file_path)
         lack_layer,pypi_info = check_lack_layer_and_extract_pypi_info(layers, folder_names,conn_pypi, cursor_pypi)
@@ -179,7 +181,7 @@ def iterate_manifest_db(dir,folder_names,db_file,conn_pypi,cursor_pypi):
                 "RepoTags": repotag,
                 "Layers": lack_layer
             }]
-            with open(f'lackLayersRepo/{file.name}', 'w', encoding='utf-8') as f:
+            with open(f'Z:/hf-images1/lackLayersRepo/{file.name}', 'w', encoding='utf-8') as f:
                 json.dump(data, f, indent=4, ensure_ascii=False)
             ### 记录到db ###
             package_dict_tmp[file.name.split('.')[0]].append([pypi_info,True])
