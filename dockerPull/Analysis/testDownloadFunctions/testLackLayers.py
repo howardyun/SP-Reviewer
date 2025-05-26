@@ -205,7 +205,7 @@ if __name__ == '__main__':
     # 获取所有的layer folder 的名称
     # folder_names = iterate_layers(f'{base_path}/layers')
     folder_names,conn_pypi,cursor_pypi = iterate_layers_db('kv_all_layer_pypi.db')
-    iterate_manifest_db(f'{base_path}/images-r8',folder_names,'repo_pypi.db',conn_pypi,cursor_pypi)
+    iterate_manifest_db(f'{base_path}/images-r8', folder_names, '../../Data/repo_pypi.db', conn_pypi, cursor_pypi)
 
 
 
