@@ -56,7 +56,7 @@ def count_unique_packages_and_versions(df):
 
 if __name__ == '__main__':
     # 读取CSV文件
-    df = pd.read_csv("../../Data/merged_result.csv")  # 替换为实际路径
+    df = pd.read_csv("../../Data/Pypi/pypi_osv/merged_result.csv")  # 替换为实际路径
     unique_package_count, version_count_df = count_unique_packages_and_versions(df)
 
 

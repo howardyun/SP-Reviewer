@@ -137,7 +137,7 @@ if __name__ == "__main__":
     import os
 
     # 读取 JSON 文件
-    with open('../../Data/second_data_pypi_info.json', 'r') as file:
+    with open('../../Data/Pypi/PypiMetaData/second_data_pypi_info.json', 'r') as file:
         data = json.load(file)
 
     # 准备 requirements.txt 内容
@@ -171,7 +171,7 @@ if __name__ == "__main__":
 
     # 设置命令行参数
     path = "../package_info_data/"
-    csv_file = "../../Data/result_second.csv"
+    csv_file = "../../Data/Pypi/pypi_osv/result_second.csv"
 
     # 执行扫描
     scan_all_folders(path, csv_file)

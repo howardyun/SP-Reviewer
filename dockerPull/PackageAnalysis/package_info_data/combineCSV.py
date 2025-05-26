@@ -1,8 +1,8 @@
 import pandas as pd
 
 # 读取两个CSV文件
-df1 = pd.read_csv("../../Data/result_first.csv")   # 第一个CSV文件路径
-df2 = pd.read_csv("../../Data/result_second.csv")  # 第二个CSV文件路径
+df1 = pd.read_csv("../../Data/Pypi/pypi_osv/result_first.csv")   # 第一个CSV文件路径
+df2 = pd.read_csv("../../Data/Pypi/pypi_osv/result_second.csv")  # 第二个CSV文件路径
 
 # 合并两个DataFrame
 merged_df = pd.concat([df1, df2], ignore_index=True)

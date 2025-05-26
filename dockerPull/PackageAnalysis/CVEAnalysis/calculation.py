@@ -3,7 +3,7 @@ from collections import Counter
 import matplotlib.pyplot as plt
 
 # 读取CSV文件
-file_path = "../../Data/result_first.csv"
+file_path = "../../Data/Pypi/pypi_osv/result_first.csv"
 df = pd.read_csv(file_path)
 
 # 去除空值

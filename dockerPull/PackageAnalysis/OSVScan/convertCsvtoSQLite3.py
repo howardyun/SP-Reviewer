@@ -2,11 +2,11 @@ import pandas as pd
 import sqlite3
 
 # 1. 读取 CSV 文件
-csv_file = '../../Data/result_first.csv'
+csv_file = '../../Data/Pypi/pypi_osv/result_first.csv'
 df = pd.read_csv(csv_file)
 
 # 2. 创建 SQLite 数据库并建立连接
-conn = sqlite3.connect('../../Data/OSV_record.db')
+conn = sqlite3.connect('../../Data/Pypi/pypi_osv/OSV_record.db')
 
 # 3. 写入数据到数据库中的表（如果存在将替换）
 df.to_sql('my_table', conn, if_exists='replace', index=False)
