@@ -1,7 +1,7 @@
 import sqlite3
 
 # 连接数据库
-conn = sqlite3.connect("repo_pypi.db")
+conn = sqlite3.connect("repo_pypi_first_time.db")
 cursor = conn.cursor()
 
 
