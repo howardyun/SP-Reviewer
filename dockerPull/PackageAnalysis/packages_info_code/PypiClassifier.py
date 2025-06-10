@@ -129,7 +129,7 @@ def classify_package(package_info):
         return "Unknown"
 
 
-def process_classification(package_list, raw_data_file, output_file):
+def process_classification(raw_data_file, output_file):
     """从本地文件读取数据并进行分类处理"""
     # 加载原始数据
     with open(raw_data_file, 'r', encoding='utf-8') as f:
@@ -137,11 +137,11 @@ def process_classification(package_list, raw_data_file, output_file):
 
     classified_results = {}
 
-    print(f"开始处理{len(package_list)}个包的分类...")
+    print(f"开始处理{len(raw_data)}个包的分类...")
 
-    for package_name in tqdm(package_list):
+    for package_name in tqdm(raw_data):
         package_raw_data = raw_data.get(package_name, {})
-        package_info = extract_package_info(package_raw_data)
+        package_info = package_raw_data
 
         if package_info:
             category = classify_package(package_info)
@@ -182,4 +182,4 @@ if __name__ == "__main__":
     fetch_all_packages_info(pypi_package_list, RAW_DATA_FILE)
 
     # 第二步：处理分类
-    process_classification(pypi_package_list, RAW_DATA_FILE, CLASSIFIED_DATA_FILE)
+    process_classification(RAW_DATA_FILE, CLASSIFIED_DATA_FILE)
