@@ -174,9 +174,9 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
-/Token_test/match_resultsmatch_results/
-/Token_test/testresult/
-/Token_test/HF/hf_access_info_test_result/
+/Token_test/HF/bk/match_resultsmatch_results/
+/Token_test/HF/bk/testresult/
+/Token_test/HF/bk/hf_access_info_test_result/
 /dockerPull/Analysis/testdata/
 /dockerPull/Analysis/tmp
 /dockerPull/Analysis/layers/
