@@ -28,7 +28,18 @@ def fetch_all_packages_info(package_list, output_file):
             response = requests.get(url, timeout=10)
             if response.status_code == 200:
                 data = response.json()
-                all_packages_data[package_name] = data
+                info = data['info']
+                package_data = {
+                    "name": package_name,
+                    "description": info.get('description', ''),
+                    "project_urls": info.get('project_urls', {}),
+                    "version": info.get('version', ''),
+                    "summary": info.get('summary', ''),
+                    "author": info.get('author', ''),
+                    "upload_time": data['releases'][info['version']][0]['upload_time'] if info.get('version') and data[
+                        'releases'].get(info['version']) else ''
+                }
+                all_packages_data[package_name] = package_data
             else:
                 all_packages_data[package_name] = {"error": f"HTTP {response.status_code}"}
         except Exception as e:
