@@ -181,3 +181,4 @@ cython_debug/
 /dockerPull/Analysis/tmp
 /dockerPull/Analysis/layers/
 /dockerPull/Analysis/manifests/
+/Token_test/DataRaw/
