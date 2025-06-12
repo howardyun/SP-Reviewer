@@ -1,3 +1,5 @@
+import base64
+
 import requests
 import json
 import os
@@ -11,6 +13,21 @@ client = OpenAI(api_key="sk-de52569cccea4977bfa54db7d6690569", base_url="https:/
 RAW_DATA_FILE = "pypi_packages_raw.json"
 CLASSIFIED_DATA_FILE = "classified_packages.json"
 
+
+def download_readme(repo_owner,repo_name):
+    github_api_url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/readme"
+    headers = {
+        "Accept": "application/vnd.github.v3+json"
+    }
+    response = requests.get(github_api_url, headers=headers)
+
+    if response.status_code == 200:
+        readme_data = response.json()
+        # README 内容是 Base64 编码的，需要解码
+        content = base64.b64decode(readme_data["content"]).decode("utf-8")
+        return content
+    else:
+        raise Exception(f"Failed to download README: {response.status_code}")
 
 def fetch_all_packages_info(package_list, output_file):
     """获取所有包的原始信息并保存到本地"""
@@ -160,6 +177,7 @@ def process_classification(raw_data_file, output_file):
         json.dump(classified_results, f, ensure_ascii=False, indent=2)
 
     print(f"分类完成! 结果已保存到 {output_file}")
+
 
 
 if __name__ == "__main__":

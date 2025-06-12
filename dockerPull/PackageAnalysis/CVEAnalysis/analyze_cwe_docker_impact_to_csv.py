@@ -1,11 +1,14 @@
 import json
-
 import pandas as pd
-import requests
 from typing import List, Dict
 import os
-
 from tqdm import tqdm
+from openai import OpenAI
+
+client = OpenAI(
+    api_key="9278228e128744ec94bf3e068f4cbdc6.Mr6uEiXteDt1ScbN",
+    base_url="https://open.bigmodel.cn/api/paas/v4/"
+)
 
 
 def read_and_process_cwe(file_path: str) -> List[str]:
@@ -32,47 +35,39 @@ def read_and_process_cwe(file_path: str) -> List[str]:
         return []
 
 
-def query_api(cwe_id: str, api_key: str, api_url: str = "https://api.deepseek.com/chat/completions") -> Dict:
+def query_api(cwe_id: str) -> Dict:
     """
-    调用 DeepSeek API 判断 CWE 是否对 Docker 有影响。
+    调用 API 判断 CWE 是否对 Docker 有影响。
     返回格式: {"cwe_id": str, "is_relevant": bool, "explanation": str}
     """
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
-    }
-
-    # 注意：DeepSeek Chat API 使用 "messages" 而非 "prompt"
     messages = [
-        {"role": "user", "content": f"Is {cwe_id} relevant to Docker security? "
-                                    "Provide a brief explanation and return a JSON object with 'cwe_id', "
-                                    "'is_relevant', and 'explanation' fields.'is_relevant'为英文，'explanation'内容为中文"}
+        {"role": "user", "content": f"Analyzing whether {cwe_id} would cause real harm to Docker's usage. Return a "
+                                    f"JSON object"
+                                    f"with 'cwe_id', 'is_relevant' (in English, e.g., true or false), "
+                                    f"and 'explanation' (a brief explanation in Chinese)."}
     ]
 
-    payload = {
-        "model": "deepseek-chat",
-        "messages": messages,  # 关键修改：使用 messages
-        "max_tokens": 300,
-        "temperature": 0.7,  # 建议降低 temperature 以提高确定性
-        "response_format": {"type": "json_object"}  # 要求返回 JSON 格式（如果 API 支持）
-    }
-
     try:
-        response = requests.post(api_url, headers=headers, json=payload)
-        response.raise_for_status()
-        result = response.json()
+        response = client.chat.completions.create(
+            model="glm-4-air-250414",
+            messages=messages,
+            max_tokens=400,
+            temperature=0.4,
+            response_format={"type": "json_object"},
+            stream=False
+        )
 
-        # 解析 API 返回的 content（假设返回在 choices[0].message.content）
-        if "choices" in result and len(result["choices"]) > 0:
-            content = result["choices"][0].get("message", {}).get("content", "{}")
+        # 解析 API 返回的 content
+        if response.choices and len(response.choices) > 0:
+            content = response.choices[0].message.content
             try:
-                return json.loads(content)  # 尝试解析返回的 JSON 字符串
+                return json.loads(content)
             except json.JSONDecodeError:
                 return {"cwe_id": cwe_id, "is_relevant": False, "explanation": "API returned invalid JSON"}
         else:
             return {"cwe_id": cwe_id, "is_relevant": False, "explanation": "No valid response from API"}
 
-    except requests.RequestException as e:
+    except Exception as e:
         print(f"Error querying API for {cwe_id}: {str(e)}")
         return {"cwe_id": cwe_id, "is_relevant": False, "explanation": f"API error: {str(e)}"}
 
@@ -94,8 +89,6 @@ def save_to_csv(results: List[Dict], output_file: str):
 def main():
     # 输入文件路径
     file_path = "../../Data/Pypi/pypi_osv/merged_result.csv"
-    # API 密钥（需替换为真实密钥）
-    api_key = os.getenv("deepseek_API_KEY", "sk-de52569cccea4977bfa54db7d6690569")
     # 输出文件
     output_file = "cwe_docker_impact.csv"
 
@@ -111,7 +104,7 @@ def main():
     # 对每个 CWE 调用 API
     for cwe_id in tqdm(cwe_list, desc="Processing CWE IDs"):
         print(f"Processing {cwe_id}...")
-        result = query_api(cwe_id, api_key)
+        result = query_api(cwe_id)
         print(result)
         results.append({
             "cwe_id": result.get("cwe_id", cwe_id),
