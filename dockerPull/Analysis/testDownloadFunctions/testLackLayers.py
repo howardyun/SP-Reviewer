@@ -181,7 +181,8 @@ def iterate_manifest_db(dir,folder_names,db_file,conn_pypi,cursor_pypi):
                 "RepoTags": repotag,
                 "Layers": lack_layer
             }]
-            with open(f'Z:/hf-images1/lackLayersRepo/{file.name}', 'w', encoding='utf-8') as f:
+            result = dir.rsplit('/', 1)[0]
+            with open(f'{result}/lackLayersRepo/{file.name}', 'w', encoding='utf-8') as f:
                 json.dump(data, f, indent=4, ensure_ascii=False)
             ### 记录到db ###
             package_dict_tmp[file.name.split('.')[0]].append([pypi_info,True])
@@ -198,14 +199,19 @@ def iterate_manifest_db(dir,folder_names,db_file,conn_pypi,cursor_pypi):
     print(f'lack:{index_lack}')
 
 
-
-if __name__ == '__main__':
-    # layer folder 的路径
-    base_path= 'Z:/hf-images1'
+def main(base_path,layer_db,save_db_file_name):
     # 获取所有的layer folder 的名称
     # folder_names = iterate_layers(f'{base_path}/layers')
-    folder_names,conn_pypi,cursor_pypi = iterate_layers_db('kv_all_layer_pypi.db')
-    iterate_manifest_db(f'{base_path}/images-r8', folder_names, '../../Data/repo/repo_pypi_first_time.db', conn_pypi, cursor_pypi)
+    # 获取所有layer对应的DB
+    folder_names, conn_pypi, cursor_pypi = iterate_layers_db(layer_db)
+    iterate_manifest_db(f'{base_path}/images-r8', folder_names, save_db_file_name, conn_pypi,
+                        cursor_pypi)
+
+if __name__ == '__main__':
+    main('E:/hf-image2','../../Data/layer/kv_all_layer_pypi.db','../../Data/repo/repo_pypi_second_time.db')
+
+
+
 
 
 

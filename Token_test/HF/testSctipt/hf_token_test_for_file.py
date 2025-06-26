@@ -1,3 +1,4 @@
+from datetime import datetime
 import os
 import re
 from huggingface_hub import HfApi
@@ -9,6 +10,11 @@ import pandas as pd
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
 import random
+import ast
+
+
+
+
 # ANSI color codes
 RED = "\033[91m"        # Bright Red
 GREEN = "\033[92m"      # Bright Green
@@ -93,7 +99,7 @@ def print_content(api, user_name, org_list, filename):
     #             f.write(f"\t\t{m.fullname}\n")
 
 
-def check_main(token,date):
+def check_main(token,date,type = "file"):
     # Check if token is provided
     # if len(sys.argv) != 2:
     #     print("Usage: python script.py <token>")
@@ -101,7 +107,7 @@ def check_main(token,date):
 
     # token = sys.argv[1]
     time.sleep(random.uniform(1, 3))
-    output_filename = f"testresult/{date}/success/{token}.txt"
+    output_filename = f"../testresult/{type}/{date}/success/{token}.txt"
 
     print(f"{YELLOW}Step 1: Validating token...{RESET}")
     print(f">>> Command: huggingface-cli login --token {token}")
@@ -160,7 +166,7 @@ def check_main(token,date):
             # Also write to file
             with open(output_filename, "a") as f:
                 f.write("Error: Unable to get username information\n")
-            os.rename(output_filename, f"testresult/{date}/error/{token}_error.txt")
+            os.rename(output_filename, f"../testresult/{type}/{date}/error/{token}_error.txt")
             return
 
         username = lines[0].strip()
@@ -199,7 +205,7 @@ def check_main(token,date):
                 print_content(api, org, [], output_filename)
 
         # Rename the file
-        new_filename = f"testresult/{date}/success/{token}_{username}"
+        new_filename = f"../testresult/{type}/{date}/success/{token}_{username}"
         if orgs:
             new_filename += "_" + "_".join(orgs)
         new_filename += ".txt"
@@ -209,31 +215,92 @@ def check_main(token,date):
         # Create the file and rename it to indicate invalid token
         with open(output_filename, "w") as f:
             pass
-        os.rename(output_filename, f"testresult/{date}/invalid/{token}_invalid.txt")
+        os.rename(output_filename, f"../testresult/{type}/{date}/invalid/{token}_invalid.txt")
 
-def main(type):
+def extract_token(df):
+    hf_keys = []
+
+    for entry in df['raw'].dropna():
+        try:
+            parsed = ast.literal_eval(entry)
+            if isinstance(parsed, list):
+                for item in parsed:
+                    if isinstance(item, dict):
+                        val = item.get('raw', '')
+                        if isinstance(val, str) and val.startswith('hf_'):
+                            hf_keys.append(val)
+        except Exception as e:
+            continue  # 跳过无法解析的行
+
+    # 去重并排序
+    unique_hf_keys = sorted(set(hf_keys))
+    return unique_hf_keys
+
+
+
+# def main(type):
+#
+#     folder_path = f'../../DataRaw/{type}'
+#     csv_files = [f for f in os.listdir(folder_path) if f.endswith('.csv')]
+#
+#     print("找到的CSV文件：")
+#     for file in csv_files:
+#         print(os.path.join(folder_path, file))
+#         csv_file = pd.read_csv(os.path.join(folder_path, file))
+#         leak_token = extract_token(csv_file)
+#         #  提取出跟hf_有关的token
+#         date = os.path.join(folder_path, file).split('\\')[-1].split('_')[0]
+#         # filter_column = csv_file[csv_file['raw'].str.startswith('hf_')]
+#         # leak_token = filter_column['raw'].unique().tolist()
+#         # 确保三个输出路径都存在
+#         for folder_type in ['success', 'invalid', 'error']:
+#             os.makedirs(f"../testresult/{type}/{date.split('/')[0]}/{folder_type}/", exist_ok=True)
+#
+#         print(f"\n开始并行处理 {len(leak_token)} 个 token...\n")
+#
+#         # 并行执行
+#         with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+#             futures = [executor.submit(check_main, token, date) for token in leak_token]
+#
+#             for future in as_completed(futures):
+#                 try:
+#                     future.result()
+#                 except Exception as e:
+#                     print(f"{RED}处理某个 token 出错：{e}{RESET}")
+
+
+def main(type, start_date_str, end_date_str):
+    # 将字符串转换为 datetime 对象
+    start_date = datetime.strptime(start_date_str, '%Y-%m')
+    end_date = datetime.strptime(end_date_str, '%Y-%m')
 
     folder_path = f'../../DataRaw/{type}'
     csv_files = [f for f in os.listdir(folder_path) if f.endswith('.csv')]
 
     print("找到的CSV文件：")
     for file in csv_files:
+        # 提取日期，例如文件名为 20240618_results.csv
+        date_str = file.split('_')[0]
+        try:
+            file_date = datetime.strptime(date_str, '%Y-%m')
+        except ValueError:
+            print(f"{RED}跳过无法解析日期的文件：{file}{RESET}")
+            continue
+
+        # 判断是否在指定时间范围内
+        if not (start_date <= file_date <= end_date):
+            continue
+
         print(os.path.join(folder_path, file))
         csv_file = pd.read_csv(os.path.join(folder_path, file))
-        #  提取出跟hf_有关的token
-        date = os.path.join(folder_path, file).split('\\')[-1].split('_')[0]
-        filter_column = csv_file[csv_file['raw'].str.startswith('hf_')]
-        leak_token = filter_column['raw'].unique().tolist()
-        # 确保三个输出路径都存在
+        leak_token = extract_token(csv_file)
+
         for folder_type in ['success', 'invalid', 'error']:
-            os.makedirs(f"../testresult/{type}/{date.split('/')[0]}/{folder_type}/", exist_ok=True)
+            os.makedirs(f"../testresult/{type}/{date_str}/{folder_type}/", exist_ok=True)
 
         print(f"\n开始并行处理 {len(leak_token)} 个 token...\n")
-
-        # 并行执行
         with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-            futures = [executor.submit(check_main, token, date) for token in leak_token]
-
+            futures = [executor.submit(check_main, token, date_str) for token in leak_token]
             for future in as_completed(futures):
                 try:
                     future.result()
@@ -242,8 +309,9 @@ def main(type):
 
 
 
+
 if __name__ == "__main__":
     # 文件中检测
-    main('file')
+    main('file','2024-03','2025-1')
     # EV中
     # main('EV')
