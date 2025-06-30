@@ -1,6 +1,5 @@
-import DataCollection
-import DataCollection.CollectSpaceList
-import DataCollection.CollectSpaceVariable 
+import DataCollection.HF.CollectSpaceList
+import DataCollection.HF.CollectSpaceVariable
 import Regex_Match
 import json
 import glob
@@ -39,7 +38,7 @@ def extract_values_from_file(filename):
 
 
 
-DataCollection.CollectSpaceList.run()
+DataCollection.HF.CollectSpaceList.run()
 
 
  # 设定文件路径
@@ -56,11 +55,11 @@ for file in csv_files:
     repo_file_path = f"../../Data/monthly_spaceId_files/{time}.json"
     scan_file_path = f"../../Data/Leak_repo_data/{time}_scan_results.csv"
     #查找
-    filtered_data = DataCollection.CollectSpaceVariable.search_varible(repo_file_path)
+    filtered_data = DataCollection.HF.CollectSpaceVariable.search_varible(repo_file_path)
     output_file = 'Output/'+ f'{time}_space_variables.json'
     # 保存 filtered_data 到 JSON 文件
     with open(output_file, 'w', encoding='utf-8') as f:
-        json.dump(filtered_data, f, ensure_ascii=False, indent=4, default=DataCollection.CollectSpaceVariable.custom_serializer) 
+        json.dump(filtered_data, f, ensure_ascii=False, indent=4, default=DataCollection.HF.CollectSpaceVariable.custom_serializer)
 
 
 

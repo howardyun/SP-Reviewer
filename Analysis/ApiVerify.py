@@ -4,6 +4,7 @@ import time
 import psycopg2
 
 import requests
+from fontTools.misc.cython import returns
 from pymongo import MongoClient
 import boto3
 from pymongo.errors import ConnectionFailure, PyMongoError
@@ -576,6 +577,7 @@ def test_replicate(api,files):
         files["available"]=0
 
 if __name__ == '__main__':
+    returns
     # # 指定文件夹的路径
     # folder_path = './result/'
     # # 检查文件夹是否存在
