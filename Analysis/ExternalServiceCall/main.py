@@ -1,163 +1,92 @@
 import os
-import re
+import ast
 import json
+import re
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
-# NoSQL/HTTP URL提取正则
-url_pattern = re.compile(r"(?<!['\"])(https?://[^\s'\"]+)")
+http_libraries = {"requests", "httpx", "urllib", "aiohttp", "http"}
+http_methods = {"get", "post", "put", "delete", "head", "options", "patch", "request"}
 
-SERVICE_SIGNATURES = {
-    "model_api": {
-        "openai_api": ["import openai", "api.openai.com", "openai.ChatCompletion"],
-        "cohere_api": ["import cohere", "cohere.Client", "api.cohere.ai"],
-        "anthropic_api": ["import anthropic", "anthropic.com"],
-        "replicate_api": ["import replicate", "replicate.run", "replicate.models"],
-        "groq_api": ["import groq", "groq.com"],
-        "huggingface_local": ["from transformers", "from_pretrained(", "AutoModel", "pipeline("],
-        "huggingface_api": ["huggingface_hub", "hf_hub_download"],
-        "vllm": ["import vllm", "vllm.LLMEngine"],
-        "llama_index": ["import llama_index", "GPTVectorStoreIndex", "ServiceContext"],
-        "langchain": ["import langchain", "langchain.llms", "LLMChain"],
-        "gpt4all": ["import gpt4all"],
-        "ctransformers": ["import ctransformers"],
-        "llamacpp": ["import llama_cpp", "llama_cpp.Llama"]
-    },
-    "database": {
-        "sqlite3": ["import sqlite3", "sqlite3.connect"],
-        "sqlalchemy": ["import sqlalchemy", "sqlalchemy.create_engine", "sessionmaker"],
-        "mongodb": ["import pymongo", "MongoClient", "mongodb://", "mongodb+srv://"],
-        "redis": ["import redis", "redis.StrictRedis", "redis://"],
-        "firebase": ["import firebase_admin", "firebase_admin.db"],
-        "tinydb": ["import tinydb", "TinyDB", "Query"],
-        "postgresql": ["import psycopg2", "psycopg2.connect", "postgresql://", "import asyncpg"],
-        "mysql": ["import mysql.connector", "mysql.connector.connect", "mysql://"],
-        "supabase": ["import supabase", "supabase.create_client", "supabase.io"],
-        "duckdb": ["import duckdb", "duckdb.connect"],
-        "neo4j": ["import neo4j", "GraphDatabase", "bolt://"],
-        "cassandra": ["import cassandra", "cassandra.cluster", "Cluster"],
-        "influxdb": ["import influxdb", "InfluxDBClient"],
-        "dynamodb": ["boto3.client(\"dynamodb\")", "dynamodb."],
-        "cloud_firestore": ["from google.cloud import firestore", "firestore.Client"]
-    },
-    "cloud_sdk": {
-        "aws": ["import boto3", "boto3.client", "s3.amazonaws.com", "sns.", "dynamodb"],
-        "gcp": ["from google.cloud", "googleapiclient.discovery"],
-        "azure": ["from azure", "azure.storage.blob"],
-        "supabase": ["import supabase", "supabase.io"],
-        "vercel": ["vercel.com"],
-        "streamlit_cloud": ["streamlit.io", "share.streamlit.io"],
-        "render": ["onrender.com"]
-    },
-    "http_api": {
-        "requests": ["requests.get(", "requests.post(", "http://", "https://"],
-        "httpx": ["import httpx"],
-        "aiohttp": ["import aiohttp", "aiohttp.ClientSession"],
-        "urllib": ["import urllib.request"],
-        "fetch_api": ["fetch(", "base_url="]
-    },
-    "web_ui_framework": {
-        "gradio": ["import gradio", "gr.Interface", "blocks="],
-        "streamlit": ["import streamlit as st"],
-        "dash": ["import dash"],
-        "panel": ["import panel as pn"],
-        "flask": ["from flask", "import flask"],
-        "fastapi": ["from fastapi", "FastAPI"]
-    },
-    "frontend_embed": {
-        "iframe_embed": ["<iframe", "src=\"https://"],
-        "plotly": ["import plotly"],
-        "bokeh": ["import bokeh"],
-        "pyvis": ["import pyvis"],
-        "ipyleaflet": ["import ipyleaflet"],
-        "pydeck": ["import pydeck"]
-    },
-    "security_and_auth": {
-        "auth0": ["auth0.com", "import auth0"],
-        "firebase_auth": ["firebase_admin.auth"],
-        "jwt": ["import jwt", "pyjwt"],
-        "oauthlib": ["import oauthlib"],
-        "cryptography": ["import cryptography", "fernet"]
-    },
-    "media_processing": {
-        "opencv": ["import cv2"],
-        "pillow": ["from PIL", "import Image"],
-        "imageio": ["import imageio"],
-        "ffmpeg": ["import ffmpeg", "ffmpeg.input"],
-        "torchaudio": ["import torchaudio"],
-        "moviepy": ["import moviepy"],
-        "librosa": ["import librosa"]
-    }
-}
+def is_local_url(url):
+    if not isinstance(url, str):
+        return False
+    local_patterns = [
+        r"^http://localhost",
+        r"^http://127\.",
+        r"^http://0\.0\.0\.0",
+        r"^http://\[::1\]",
+    ]
+    return any(re.match(pat, url) for pat in local_patterns)
 
-# 以下函数保持原有逻辑不变
-def extract_http_urls(content):
-    return list(set(url_pattern.findall(content)))
+def extract_http_calls_from_file(file_path):
+    calls = set()
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            tree = ast.parse(f.read(), filename=file_path)
 
-def analyze_file(filepath):
-    with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
-        content = f.read()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+                func_name = node.func.attr
+                if func_name in http_methods:
+                    if isinstance(node.func.value, ast.Name) and node.func.value.id in http_libraries:
+                        for arg in node.args:
+                            if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
+                                url = arg.value.strip()
+                                if not is_local_url(url):
+                                    calls.add(url)
+                            elif isinstance(arg, ast.Str):
+                                url = arg.s.strip()
+                                if not is_local_url(url):
+                                    calls.add(url)
+    except Exception as e:
+        print(f"[WARN] Failed to parse {file_path}: {e}")
+    return calls
 
-    service_hits = {}
-    http_urls = extract_http_urls(content)
-
-    for service_type, subtypes in SERVICE_SIGNATURES.items():
-        service_hits[service_type] = {}
-        for subtype, patterns in subtypes.items():
-            hits = [p for p in patterns if p in content]
-            if hits:
-                if service_type == "http_api":
-                    service_hits[service_type][subtype] = {
-                        "keywords": hits,
-                        "urls": http_urls if http_urls else []
-                    }
-                else:
-                    service_hits[service_type][subtype] = hits
-    return service_hits
-
-def analyze_repo(repo_path):
-    result = {
-        "repo": os.path.basename(repo_path),
-        "services": {},
-    }
+def analyze_one_repo(repo_path):
+    repo_name = os.path.basename(repo_path)
+    all_calls = set()
     for root, _, files in os.walk(repo_path):
         for file in files:
             if file.endswith(".py"):
-                full_path = os.path.join(root, file)
-                hits = analyze_file(full_path)
-                for s_type, s_hits in hits.items():
-                    for s_subtype, value in s_hits.items():
-                        if s_type == "http_api" and isinstance(value, dict):
-                            result["services"].setdefault(s_type, {}).setdefault(s_subtype, {
-                                "keywords": set(),
-                                "urls": set()
-                            })
-                            result["services"][s_type][s_subtype]["keywords"].update(value["keywords"])
-                            result["services"][s_type][s_subtype]["urls"].update(value["urls"])
-                        else:
-                            result["services"].setdefault(s_type, {}).setdefault(s_subtype, set()).update(value)
+                file_path = os.path.join(root, file)
+                calls = extract_http_calls_from_file(file_path)
+                all_calls.update(calls)
+    return repo_name, sorted(all_calls) if all_calls else None
 
-    # 转换 set 为 list
-    for s_type in result["services"]:
-        for s_subtype in result["services"][s_type]:
-            if isinstance(result["services"][s_type][s_subtype], dict):
-                for k in result["services"][s_type][s_subtype]:
-                    result["services"][s_type][s_subtype][k] = list(result["services"][s_type][s_subtype][k])
-            else:
-                result["services"][s_type][s_subtype] = list(result["services"][s_type][s_subtype])
-    return result
+def analyze_month_folder(month_folder, output_dir, max_workers=8):
+    all_repos = [
+        os.path.join(month_folder, repo)
+        for repo in os.listdir(month_folder)
+        if os.path.isdir(os.path.join(month_folder, repo))
+    ]
 
-def main(base_dir):
-    all_results = []
-    futures = []
+    result = {}
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = {executor.submit(analyze_one_repo, repo_path): repo_path for repo_path in all_repos}
 
-    for repo in os.listdir(base_dir):
-        repo_path = os.path.join(base_dir, repo)
-        if os.path.isdir(repo_path):
-            print(f"Analyzing {repo}...")
-            result = analyze_repo(repo_path)
-            all_results.append(result)
+        for future in as_completed(futures):
+            repo_path = futures[future]
+            try:
+                repo_name, urls = future.result()
+                if urls:
+                    result[repo_name] = urls
+            except Exception as exc:
+                print(f"[X] Error in repo {repo_path}: {exc}")
 
-    with open("external_services_report.json", "w", encoding="utf-8") as f:
-        json.dump(all_results, f, indent=2, ensure_ascii=False)
+    if result:
+        month = os.path.basename(month_folder)
+        output_path = os.path.join(output_dir, f"{month}.json")
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(result, f, indent=2, ensure_ascii=False)
+        print(f"[✓] Saved: {month} ({len(result)} repos with HTTP calls)")
+
 
 if __name__ == "__main__":
-    main(r"F:\download_space\2022-03")
+    base_dir = "F:/download_space"
+    output_dir = os.path.join(base_dir, "http_call")
+    os.makedirs(output_dir, exist_ok=True)
+
+    for i in range(1, 13):
+        month_folder = f"{base_dir}/2023-{'0'+str(i) if i < 10 else str(i)}"
+        if os.path.exists(month_folder):
+            analyze_month_folder(month_folder, output_dir, max_workers=12)
