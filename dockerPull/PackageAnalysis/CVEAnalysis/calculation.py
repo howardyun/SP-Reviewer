@@ -2,9 +2,15 @@ import pandas as pd
 from collections import Counter
 import matplotlib.pyplot as plt
 
-# 读取CSV文件
+# 读取第一个 CSV 文件
 file_path = "../../Data/Pypi/pypi_osv/result_first.csv"
-df = pd.read_csv(file_path)
+df1 = pd.read_csv(file_path)
+
+# 读取第二个 CSV 文件
+file_path2 = "../../Data/Pypi/pypi_osv/result_second.csv"
+df2 = pd.read_csv(file_path2)
+
+df = pd.concat([df1, df2])
 
 # 去除空值
 cwe_series = df['Cwe_Ids'].dropna()
@@ -25,10 +31,8 @@ cwe_df = cwe_df.sort_values(by='Count', ascending=False)
 # 打印或保存结果
 print(cwe_df)
 
-
-
 # 如果CWE种类太多，这里只画前20个
-top_n = 20
+top_n = 50
 top_cwe_df = cwe_df.head(top_n)
 
 # 设置中文支持（可选）
@@ -46,8 +50,6 @@ plt.tight_layout()
 
 # 显示图表
 plt.show()
-
-
 
 # 可选：保存为新CSV
 # cwe_df.to_csv("cwe_counts.csv", index=False)
