@@ -183,4 +183,7 @@ cython_debug/
 /dockerPull/Analysis/manifests/
 /Token_test/DataRaw/
 !/Token_test/DataRaw/.gitkeep
+/Data/
+/Data/testresult/
+!/Data/.gitkeep
 
