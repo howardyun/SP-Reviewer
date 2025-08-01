@@ -1,12 +1,7 @@
 import os
-import csv
-import json
-from collections import defaultdict
-
 import subprocess
 from concurrent.futures import ThreadPoolExecutor, as_completed
-
-
+from collections import defaultdict
 def parse_git_log_output(output):
     commits = []
     sections = output.split("===COMMIT===")
@@ -15,7 +10,10 @@ def parse_git_log_output(output):
         if not lines:
             continue
 
+        # 提取 commit hash
         commit_hash = lines[0].strip()
+
+        # 提取 author name 和 email（跳过 gpg 行）
         author_name = None
         author_email = None
         for i in range(1, len(lines)):
@@ -24,7 +22,7 @@ def parse_git_log_output(output):
                     author_name = lines[i].strip()
                 elif author_email is None:
                     author_email = lines[i].strip()
-                    signature_block = "\n".join(lines[i+1:])
+                    signature_block = "\n".join(lines[i+1:])  # 剩余的为 signature block
                     break
 
         if author_name and author_email:
@@ -37,81 +35,32 @@ def parse_git_log_output(output):
             })
         else:
             print(f"⚠️ 无法解析作者信息，跳过 commit: {commit_hash}")
+
     return commits
-
-
-def ensure_git_safe_directory(repo_path):
-
-    try:
-        subprocess.run(
-            ["git", "config", "--global", "--unset-all", "safe.directory"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            check=True
-        )
-        subprocess.run(
-            ["git", "config", "--global", "--add", "safe.directory",
-             repo_path],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            encoding="utf-8"
-        )
-    except subprocess.CalledProcessError as e:
-        print(f"⚠️ 添加 safe.directory 失败: {e.stderr.strip()}")
 
 def check_repo(repo_path):
     print(f"\n==== 检查仓库：{os.path.basename(repo_path)} ====")
-    # repo_path = os.path.abspath(repo_path).replace("\\", "/")
-    print(repo_path)
-    # subprocess.run(
-    #     ["git", "config", "--global", "--add", "safe.directory",
-    #      repo_path],
-    #     stdout=subprocess.PIPE,
-    #     stderr=subprocess.PIPE,
-    #     text=True,
-    #     encoding="utf-8"
-    # )
-    # ensure_git_safe_directory(repo_path)
     try:
-        # result = subprocess.run(
-        #     [
-        #         "git", "log",
-        #         "--reverse",
-        #         "--pretty=format:===COMMIT===%n%H%n%an%n%ae",
-        #         "--show-signature"
-        #     ],
-        #     cwd=repo_path,
-        #     stdout=subprocess.PIPE,
-        #     stderr=subprocess.PIPE,
-        #     text=True,
-        #     timeout=180,
-        #     env={**os.environ, "GIT_TERMINAL_PROMPT": "0"}
-        # )
         result = subprocess.run(
-            ["git", "-c", "safe.directory=*", "log", "--reverse", "--pretty=format:===COMMIT===%n%H%n%an%n%ae",
-             "--show-signature"],
+            [
+                "git", "log",
+                "--reverse",
+                "--pretty=format:===COMMIT===%n%H%n%an%n%ae",
+                "--show-signature"
+            ],
             cwd=repo_path,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             text=True,
-            timeout=180,
+            timeout=60
         )
-
-        if result.returncode != 0:
-            raise RuntimeError(result.stderr.strip())
 
         output = result.stdout
         commits_info = parse_git_log_output(output)
 
         total_commits = len(commits_info)
-        if total_commits == 0:
-            print('Pause')
-        else:
-            print(total_commits)
         signed_commits = sum(1 for c in commits_info if c['signed'])
 
+        # 作者级别签名统计
         author_stats = defaultdict(lambda: {"total": 0, "signed": 0})
         for commit in commits_info:
             key = f"{commit['author_name']} <{commit['author_email']}>"
@@ -119,6 +68,16 @@ def check_repo(repo_path):
             if commit["signed"]:
                 author_stats[key]["signed"] += 1
 
+        # 打印基础信息
+        # for commit in commits_info:
+        #     print(f"{commit['commit'][:7]} by {commit['author_name']} <{commit['author_email']}> "
+        #           f"{'✅ 有签名' if commit['signed'] else '❌ 无签名'}")
+        #
+        # print(f"\n📊 仓库提交统计（{total_commits} 提交）:")
+        # print(f"  🔐 有签名提交数: {signed_commits}")
+        # print(f"  ✅ 是否全签: {'是' if signed_commits == total_commits else '否'}")
+        #
+        # print("\n📊 作者级别签名统计：")
         author_stats_json = {}
         for author, stats in author_stats.items():
             all_signed = stats["signed"] == stats["total"]
@@ -127,8 +86,11 @@ def check_repo(repo_path):
                 "signed": stats["signed"],
                 "all_signed": all_signed
             }
+            # print(f"  👤 {author}: {stats['signed']}/{stats['total']} 已签名 "
+            #       f"{'✅ 全签' if all_signed else '❌ 部分未签'}")
 
-        return os.path.basename(repo_path), {
+        # 返回 JSON 结构
+        return os.path.basename(repo_path),{
             "total_commits": total_commits,
             "signed_commits": signed_commits,
             "all_signed": signed_commits == total_commits,
@@ -137,18 +99,26 @@ def check_repo(repo_path):
 
     except Exception as e:
         print(f"❌ 仓库读取失败: {e}")
-        return os.path.basename(repo_path), {"error": str(e)}
-
+        return os.path.basename(repo_path),{
+            "error": str(e)
+        }
+import csv
+import json
 
 def save_repo_jsons_simple(repo_names, repo_jsons, filename="repo_signatures.csv"):
     with open(filename, mode="w", encoding="utf-8", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["repo_name", "repo_json"])
+        writer.writerow(["repo_name", "repo_json"])  # 表头
+
         for name, json_obj in zip(repo_names, repo_jsons):
-            writer.writerow([name, json.dumps(json_obj, ensure_ascii=False)])
+            writer.writerow([
+                name,
+                json.dumps(json_obj, ensure_ascii=False)  # 转成字符串
+            ])
 
 
-def main(dir, max_workers=8):
+
+def main(dir, max_workers=1):
     repo_names = []
     repo_jsons = []
 
@@ -174,7 +144,6 @@ def main(dir, max_workers=8):
 
     return repo_names, repo_jsons
 
-
 def test():
     new_folder_path = r'D:\workspace\test'
     repo_names, repo_jsons = main(new_folder_path)
@@ -182,12 +151,20 @@ def test():
     print(repo_jsons)
 
 
+
 if __name__ == "__main__":
-    root_dir = "Z:/download_space"
+    # test()
+    root_dir = "F:/download_space"  # 你的仓库目录
+
+    # 定义根目录和输出结果根目录
     output_dir = f"{root_dir}/commit_history_info/"
-    os.makedirs(output_dir, exist_ok=True) 
-    for i in range(1,6):
-        new_folder_path = f"{root_dir}/2025-{i:02d}"
-        repo_names, repo_jsons = main(new_folder_path)
-        output_path = os.path.join(output_dir, f"{new_folder_path.split('/')[-1]}.csv")
-        save_repo_jsons_simple(repo_names, repo_jsons, output_path)
+    os.makedirs(output_dir, exist_ok=True)  # 如果目录不存在，则创建
+    for i in range(3,4):
+        new_folder_path = ''
+        if i <10:
+            new_folder_path = f"{root_dir}/2022-0"+str(i)
+        else:
+            new_folder_path = f"{root_dir}/2022-" + str(i)
+
+        repo_names ,repo_jsons= main(new_folder_path)
+        save_repo_jsons_simple(repo_names, repo_jsons,output_dir+new_folder_path.split("/")[-1]+".csv")
