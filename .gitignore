@@ -187,3 +187,5 @@ cython_debug/
 /Data/testresult/
 !/Data/.gitkeep
 
+/DataCollection/HF/monthly_spaceId_files/
+/DataCollection/HF/monthly_spaceId_files/
