@@ -56,6 +56,37 @@ Layer与Pypi包的映射:[extractEachLayerPypi.py](dockerPull%2FAnalysis%2FPacka
 #### 测试下载是否存在文件缺失：[testFileexist.py](dockerPull%2FAnalysis%2FtestDownloadFunctions%2FtestFileexist.py)
 #### 根据Manifest文件查找缺失的Layer：[testLackLayers.py](dockerPull%2FAnalysis%2FtestDownloadFunctions%2FtestLackLayers.py)
 
+## [PackageAnalysis](dockerPull/PackageAnalysis)
+### [Analysis](dockerPull/PackageAnalysis/CVEAnalysis/Analysis.py)
+包的cve,cwe分析
+### [analyze_cwe_docker_impact_to_csv](dockerPull/PackageAnalysis/CVEAnalysis/analyze_cwe_docker_impact_to_csv.py)
+调用 llm 判断 CWE 是否对 Docker 有影响。
+### [pypi_cwe_frequency_analysis](dockerPull/PackageAnalysis/CVEAnalysis/pypi_cwe_frequency_analysis.py)
+统计pypi包中cwe的频率
+### [draw_cwe_warehouse_bar_chart](dockerPull/PackageAnalysis/CVEAnalysis/draw_cwe_warehouse_bar_chart.py)
+绘制仓库中 Top-N 的 CWE 类型分布柱状图。
+
+## [packages_info_code](dockerPull/PackageAnalysis/packages_info_code)
+### [kv_layer_dangling.py](dockerPull/PackageAnalysis/packages_info_code/kv_layer_dangling.py)
+extracts dangling package from the layer.
+### [PypiClassifier.py](dockerPull/PackageAnalysis/packages_info_code/PypiClassifier.py)
+使用llm对包进行分类
+### [github_check](dockerPull/PackageAnalysis/packages_info_code/github_check.py)
+检查包是否在github上
+### [pypi_calculation](dockerPull/PackageAnalysis/packages_info_code/pypi_calculation.py)
+该脚本从指定的 SQLite 数据库中读取每个仓库的 pypi_info_list，解析并统计包实例总数、唯一包数（含/不含版本号），并将出现频率最高的前 50 个包绘制成柱状图。
+### [top10_daling_packages](dockerPull/PackageAnalysis/packages_info_code/top10_daling_packages.py)
+统计dangling包的频率
+
+## [Analysis](Analysis)
+### [Organizational_analysis](Analysis/Organizational_analysis.py)
+env中huggingface token的org的提取
+### [space_dataset__model.py](Analysis/space_dataset__model.py)
+分析space关联的model和datasets
+### [Top-10_Users_Public_vs_Private_Resources](Analysis/Top-10_Users_Public_vs_Private_Resources.py)
+分析Top-10用户公开和私有资源
+
+
 
 ### [back_up_files](dockerPull%2Fback_up_files)：备份已有数据
 
