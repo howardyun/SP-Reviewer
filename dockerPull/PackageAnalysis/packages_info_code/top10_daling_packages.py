@@ -1,44 +1,3 @@
-# import json
-# import matplotlib.pyplot as plt
-# from collections import Counter
-#
-# # Read the JSON file
-# with open('classified_packages.json', 'r',encoding="UTF-8") as file:
-#     data = json.load(file)
-#
-# # Extract categories
-# categories = []
-# for item in data.values():
-#     if 'info' in item and 'error' in item['info'] and item['info']['error'] == 'HTTP 404':
-#         categories.append('Dangling')
-#     else:
-#         categories.append(item.get('category', 'Unknown'))
-#
-# # Count occurrences of each category
-# category_counts = Counter(categories)
-#
-# # Prepare data for plotting
-# labels = list(category_counts.keys())
-# values = list(category_counts.values())
-#
-# # Create bar plot
-# plt.figure(figsize=(10, 6))
-# plt.bar(labels, values, color='skyblue')
-# plt.xlabel('Category')
-# plt.ylabel('Count')
-# plt.title('Distribution of Categories (Including Dangling)')
-# plt.xticks(rotation=45, ha='right')
-# plt.tight_layout()
-#
-# # Save the plot
-# plt.savefig('category_distribution.png')
-# plt.close()
-#
-# # Print category counts
-# print("Category Counts:")
-# for category, count in category_counts.items():
-#     print(f"{category}: {count}")
-# pip install pandas matplotlib seaborn
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -47,12 +6,12 @@ import seaborn as sns
 df = pd.read_csv('bb.csv')
 
 font_size = {
-    'font.size': 12,  # 全局默认
-    'axes.titlesize': 16,  # 标题
-    'axes.labelsize': 14,  # 轴标题
-    'xtick.labelsize': 12,  # x 刻度
-    'ytick.labelsize': 12,  # y 刻度
-    'legend.fontsize': 10  # 图例（虽然这里没用上）
+    'font.size': 16,  # 全局默认
+    'axes.titlesize': 20,  # 标题
+    'axes.labelsize': 18,  # 轴标题
+    'xtick.labelsize': 14,  # x 刻度
+    'ytick.labelsize': 16,  # y 刻度
+    'legend.fontsize': 14  # 图例（虽然这里没用上）
 }
 # 4-2 统一风格
 sns.set_theme(
@@ -79,7 +38,7 @@ packages = (
 count = packages.value_counts().head(10)
 
 # 4. 画图（保持降序）
-plt.figure(figsize=(10, 4))
+plt.figure(figsize=(8, 5))
 sns.barplot(
     x=count.index,
     y=count.values,
@@ -90,8 +49,10 @@ sns.barplot(
 )
 plt.xticks(rotation=45, ha='right')
 plt.ylabel('Number of repositories')
-plt.xlabel('daling_packages')
-plt.title('Top 10 daling_packages by repository count')
+
+# 设置 x 轴标签加粗
+# plt.gca().tick_params(axis='x', labelweight='bold')
+
 plt.tight_layout()
-plt.savefig('top10_daling_packages.png', dpi=300)
+plt.savefig('Top10_dangling_Package.pdf', dpi=300)
 plt.show()

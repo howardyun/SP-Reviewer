@@ -10,7 +10,7 @@ from huggingface_hub import HfApi
 
 
 # Please input your own Hugging Face API token
-API_TOKEN = ""
+API_TOKEN = "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"
 
 api = HfApi(token=API_TOKEN)
 
@@ -23,10 +23,6 @@ def custom_serializer(obj):
         return obj.strftime('%Y-%m-%d %H:%M:%S')
     # 如果是其他不可序列化类型，抛出异常
     raise TypeError(f"Type {obj.__class__.__name__} not serializable")
-
-
-
-
 
 
 def search_varible(json_file):
@@ -72,8 +68,8 @@ def search_varible(json_file):
 
 if __name__ == "__main__":
     # 设定文件路径
-    folder_path = "../../Data/Leak_repo_data"  # 修改为你的实际路径
-    file_pattern = os.path.join(folder_path, "*.csv")  # 查找所有 CSV 文件
+    folder_path = "monthly_spaceId_files"  # 修改为你的实际路径
+    file_pattern = os.path.join(folder_path, "*.json")  # 查找所有 CSV 文件
     all_time_interval = []
     # 获取所有匹配的文件列表
     csv_files = sorted(glob.glob(file_pattern))
@@ -81,11 +77,10 @@ if __name__ == "__main__":
         filename = os.path.basename(file)  # 获取文件名
         time = filename.split("_")[0]
         print("正在处理"+time+'.'*10)
-        repo_file_path = f"../../Data/monthly_spaceId_files/{time}.json"
-        scan_file_path = f"../../Data/Leak_repo_data/{time}_scan_results.csv"
+        repo_file_path = f"monthly_spaceId_files/{time}"
         #查找
         filtered_data = search_varible(repo_file_path)
-        output_file = 'Output/'+ f'{time}_space_variables.json'
+        output_file = 'Z:/HF_Space_Variable/'+ f'{time}_space_variables.json'
         # 保存 filtered_data 到 JSON 文件
         with open(output_file, 'w', encoding='utf-8') as f:
             json.dump(filtered_data, f, ensure_ascii=False, indent=4, default=custom_serializer)

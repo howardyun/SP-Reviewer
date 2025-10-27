@@ -1,7 +1,7 @@
 import json
 import os
 from pathlib import Path
-from collections import defaultdict
+from collections import defaultdict, Counter
 from time import process_time_ns
 
 import numpy as np
@@ -25,7 +25,6 @@ def to_dict(all_packages):
             name, version = pkg_clean.rsplit('-', 1)
             package_dict[name].append(version)
         except ValueError:
-            # 防止解析失败
             continue
     return package_dict
 
@@ -57,39 +56,51 @@ def extract_pypi_by_layers(target_path, layers):
     return to_dict(all_packages), lack_layers
 
 
-def process_manifest(file, base_path):
-    file_path = str(file)
-    layers = get_layers_by_manifest_json(file_path)
-    return layers
+def process_manifest(file):
+    return get_layers_by_manifest_json(str(file))
 
 
-if __name__ == '__main__':
-    base_path = r'Z:/hf-images1'
-    folder_path = Path(f'{base_path}/images-r8')
-    json_files = list(folder_path.glob('*.json'))  # 当前目录下的所有 .json 文件
-
+def process_folder(folder_path: Path):
+    json_files = list(folder_path.glob('*.json'))
     layers_record = []
 
     with ThreadPoolExecutor(max_workers=8) as executor:
-        futures = {executor.submit(process_manifest, file, base_path): file for file in json_files}
-
+        futures = {executor.submit(process_manifest, file): file for file in json_files}
         for i, future in enumerate(as_completed(futures)):
             result = future.result()
             layers_record.append(result)
             if i % 10000 == 0:
-                print(f'已处理 {i} 个文件')
+                print(f'[{folder_path.name}] 已处理 {i} 个文件')
 
-    # 多维数组的展平
+    # 展平所有层
     flattened = [item for sublist in layers_record for item in sublist]
-
-    np_list = np.array(flattened)
-    # 统计每个唯一值出现次数
-    unique, counts = np.unique(flattened, return_counts=True)
-
-    # 打印统计结果
-    for val, count in zip(unique, counts):
-        print(f'值 {val} 出现了 {count} 次')
+    return flattened
 
 
+if __name__ == '__main__':
+    base_path = Path('Z:/hf-images1')
 
+    # 需要处理的多个文件夹路径
+    folder_names = ['Z:/hf-images1/images-r8', 'G:/hf-image2/images-r8']
+    total_layers = []
 
+    for folder_name in folder_names:
+        folder_path = Path(folder_name)
+        print(f'开始处理文件夹: {folder_path}')
+        layers = process_folder(folder_path)
+        total_layers.extend(layers)
+
+    # 统计所有 layer 出现频率
+    counter = Counter(total_layers)
+
+    print('\n=== 合并统计结果 ===')
+    for val, count in counter.most_common():
+        print(f'Layer {val} 出现了 {count} 次')
+
+    # 保存为 CSV 文件
+    df = pd.DataFrame(counter.items(), columns=['layer', 'count'])
+    df.sort_values(by='count', ascending=False, inplace=True)
+
+    output_path = base_path / 'layer_statistics.csv'
+    df.to_csv(output_path, index=False, encoding='utf-8')
+    print(f'\n已保存统计结果到: {output_path}')
