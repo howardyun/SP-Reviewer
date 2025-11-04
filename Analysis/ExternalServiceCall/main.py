@@ -30,7 +30,7 @@ def extract_http_calls_from_file(file_path):
                 if func_name in http_methods:
                     if isinstance(node.func.value, ast.Name) and node.func.value.id in http_libraries:
                         for arg in node.args:
-                            if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
+                            if isinstance(arg, ast. Constant) and isinstance(arg.value, str):
                                 url = arg.value.strip()
                                 if not is_local_url(url):
                                     calls.add(url)
