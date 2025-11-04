@@ -1,6 +1,6 @@
 from huggingface_hub import HfApi
 
-api = HfApi(token='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')
+api = HfApi(token='')
 
 hf = HfApi()
 
